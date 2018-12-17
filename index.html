@@ -95,7 +95,7 @@
 					// Add mesh to scene
 					var mymesh = new THREE.Mesh(geom, material);					
 					mymesh.material.side = THREE.DoubleSide;
-					mymesh.geometry.normalize()
+					mymesh.geometry.normalize();
 					scene.add(mymesh);
 					// Add edges
 					var geo = new THREE.EdgesGeometry( mymesh.geometry ); 
