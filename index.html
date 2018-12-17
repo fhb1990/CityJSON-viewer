@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>CityJSON viewer</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<link rel="stylesheet" href="./css/cityjson.css">
+  		<form id="dropbox" class="my-form">
+			<p>This is the dropbox for now.</p>
+			<input type="file" id="fileElem" onchange="handleFiles(this.files)">
+
+		<script src="js/three.min.js"></script>
+		<script src="js/OrbitControls.js"></script>
+		<script src="js/jquery-3.3.1.min.js"></script>
+		<script>
+			
+			function jsonGetter (url) {
+				"use strict"
+				
+				// Create new geometry for the new mesh
+				var geom = new THREE.Geometry();
+
+				$.getJSON(url, function (json) {
+					
+					// Remove old geometry from scene
+					while(scene.children.length > 0){ 
+					    scene.remove(scene.children[0]); 
+					};
+
+					// Add vertices to geometry
+					for (var i = 0; i < json.vertices.length; i++) {
+						geom.vertices.push( new THREE.Vector3 (
+							json.vertices[i][0],
+							json.vertices[i][1],
+							json.vertices[i][2]));
+					}
+
+					// Add faces to geometry
+					for (var cityObj in json.CityObjects){
+
+						for (var geomNum = 0; geomNum < json.CityObjects[cityObj].geometry.length; geomNum++) {
+
+							if (json.CityObjects[cityObj].geometry[geomNum].type == ("MultiSurface" || "CompositeSurface")) {
+
+								for (var j = 0; j < json.CityObjects[cityObj].geometry[geomNum].boundaries.length; j++) {
+									geom.faces.push( new THREE.Face3(
+										json.CityObjects[cityObj].geometry[geomNum].boundaries[j][0][0],
+										json.CityObjects[cityObj].geometry[geomNum].boundaries[j][0][1],
+										json.CityObjects[cityObj].geometry[geomNum].boundaries[j][0][2]
+									));
+								};
+							};
+							
+							if (json.CityObjects[cityObj].geometry[geomNum].type == "Solid") {
+
+								for (var k = 0; k < json.CityObjects[cityObj].geometry[geomNum].boundaries[0].length; k++) {
+									geom.faces.push( new THREE.Face3(
+										json.CityObjects[cityObj].geometry[geomNum].boundaries[0][k][0][0],
+										json.CityObjects[cityObj].geometry[geomNum].boundaries[0][k][0][1],
+										json.CityObjects[cityObj].geometry[geomNum].boundaries[0][k][0][2]
+									));
+								};
+
+							};
+
+							if (json.CityObjects[cityObj].geometry[geomNum].type == ("MultiSolid" || "CompositeSolid")) {
+
+								for (var l = 0; l < json.CityObjects[cityObj].geometry[geomNum].boundaries.length; l++) {
+									for (var m = 0; m < json.CityObjects[cityObj].geometry[geomNum].boundaries[l][0].length; m++) {
+										geom.faces.push( new THREE.Face3(
+											json.CityObjects[cityObj].geometry[geomNum].boundaries[l][0][m][0][0],
+											json.CityObjects[cityObj].geometry[geomNum].boundaries[l][0][m][0][1],
+											json.CityObjects[cityObj].geometry[geomNum].boundaries[l][0][m][0][2]
+										));
+									};
+								};
+							};	
+						};
+					};
+
+					// Material for mesh
+					var material = new THREE.MeshPhongMaterial( {
+				        color: 0x589dc0, 
+				        flatShading: THREE.FlatShading,
+				        polygonOffset: true,
+				        polygonOffsetFactor: 1, // positive value pushes polygon further away
+				        polygonOffsetUnits: 1
+				    } );
+
+					// Add mesh to scene
+					var mymesh = new THREE.Mesh(geom, material);					
+					mymesh.material.side = THREE.DoubleSide;
+					mymesh.geometry.normalize()
+					scene.add(mymesh);
+					// Add edges
+					var geo = new THREE.EdgesGeometry( mymesh.geometry ); 
+    				var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
+				    var wireframe = new THREE.LineSegments( geo, mat );
+				    mymesh.add( wireframe );
+
+				    // Reposition camera
+				    camera.position.set(0, 0, 2);
+				    camera.lookAt(0, 0, 0);
+
+				    // Render & orbit controls
+					var controls = new THREE.OrbitControls( camera, renderer.domElement );
+					controls.target.set(0, 0, 0);
+					controls.addEventListener( 'change', function() { renderer.render(scene, camera); } ); 
+					renderer.render(scene, camera);
+				});
+			};
+
+			// Dropbox functions
+			var dropbox;
+			dropbox = document.getElementById("dropbox");
+			dropbox.addEventListener("dragenter", dragenter, false);
+			dropbox.addEventListener("dragover", dragover, false);
+			dropbox.addEventListener("drop", drop, false);
+
+			['dragover'].forEach(eventName => {
+			  dropbox.addEventListener(eventName, highlight, false)
+			})
+
+			;['dragleave', 'drop'].forEach(eventName => {
+			  dropbox.addEventListener(eventName, unhighlight, false)
+			})
+
+			function highlight(e) {
+			  dropbox.classList.add('highlight')
+			}
+
+			function unhighlight(e) {
+			  dropbox.classList.remove('highlight')
+			}
+
+			function dragenter(e) {
+			  e.stopPropagation();
+			  e.preventDefault();
+			}
+
+			function dragover(e) {
+			  e.stopPropagation();
+			  e.preventDefault();
+			}
+
+			function drop(e) {
+			  e.stopPropagation();
+			  e.preventDefault();
+
+			  var dt = e.dataTransfer;
+			  var files = dt.files;
+
+			  handleFiles(files);
+			}
+
+			function handleFiles(files) {
+				var jsonfile = files[0]
+				var objectURL = window.URL.createObjectURL(jsonfile);
+				jsonGetter(objectURL)
+			}
+
+			// Initiate scene, camera, renderer
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera(
+			    60,                                   // Field of view
+			    window.innerWidth/window.innerHeight, // Aspect ratio
+			    0.1,                                  // Near clipping pane
+			    10000                                  // Far clipping pane
+			);
+			var renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setClearColor( 0xfff6e6 );
+			document.body.appendChild( renderer.domElement );
+			renderer.render(scene, camera);
+		</script>
+	</body>
+</html>
