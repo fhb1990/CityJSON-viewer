@@ -40,8 +40,34 @@
 							json.vertices[i][2]));
 					}
 
+					var objColors = {
+						"Building": 0xcc0000,
+						"BuildingPart": 0xcc0000,
+						"BuildingInstallation": 0xcc0000,
+						"Bridge": 0x999999,
+						"BridgePart": 0x999999,
+						"BridgeInstallation": 0x999999,
+						"BridgeConstructionElement": 0x999999,
+						"CityObjectGroup": 0xffffb3,
+						"CityFurniture": 0xcc0000,
+						"GenericCityObject": 0xcc0000,
+						"LandUse": 0xffffb3,
+						"PlantCover": 0x39ac39,
+						"Railway": 0x000000,
+						"Road": 0x999999,
+						"SolitaryVegetationObject": 0x39ac39,
+						"TINRelief": 0x39ac39,
+						"TransportSquare": 0x999999,
+						"Tunnel": 0x999999,
+						"TunnelPart": 0x999999,
+						"TunnelInstallation": 0x999999,
+						"WaterBody": 0x4da6ff
+					};
+					var faceCounter = 0;
 					// Add faces to geometry
 					for (var cityObj in json.CityObjects){
+
+						var coType = json.CityObjects[cityObj].type;
 
 						for (var geomNum = 0; geomNum < json.CityObjects[cityObj].geometry.length; geomNum++) {
 
@@ -53,6 +79,9 @@
 										json.CityObjects[cityObj].geometry[geomNum].boundaries[j][0][1],
 										json.CityObjects[cityObj].geometry[geomNum].boundaries[j][0][2]
 									));
+									var currentFace = geom.faces[ faceCounter ];
+									currentFace.color.setHex( objColors[coType] );
+									faceCounter += 1;
 								};
 							};
 							
@@ -64,6 +93,9 @@
 										json.CityObjects[cityObj].geometry[geomNum].boundaries[0][k][0][1],
 										json.CityObjects[cityObj].geometry[geomNum].boundaries[0][k][0][2]
 									));
+									var currentFace = geom.faces[ faceCounter ];
+									currentFace.color.setHex( objColors[coType] );
+									faceCounter += 1;
 								};
 
 							};
@@ -77,16 +109,21 @@
 											json.CityObjects[cityObj].geometry[geomNum].boundaries[l][0][m][0][1],
 											json.CityObjects[cityObj].geometry[geomNum].boundaries[l][0][m][0][2]
 										));
+										var currentFace = geom.faces[ faceCounter ];
+										currentFace.color.setHex( objColors[coType] );
+										faceCounter += 1;
 									};
 								};
 							};	
 						};
+					
 					};
 
+					//geom.computeFaceNormals();
 					// Material for mesh
-					var material = new THREE.MeshPhongMaterial( {
-				        color: 0x589dc0, 
-				        flatShading: THREE.FlatShading,
+					var material = new THREE.MeshBasicMaterial( {
+				        vertexColors: THREE.VertexColors,
+				    	flatShading: THREE.FlatShading,
 				        polygonOffset: true,
 				        polygonOffsetFactor: 1, // positive value pushes polygon further away
 				        polygonOffsetUnits: 1
@@ -97,12 +134,16 @@
 					mymesh.material.side = THREE.DoubleSide;
 					mymesh.geometry.normalize();
 					scene.add(mymesh);
+					
 					// Add edges
-					var geo = new THREE.EdgesGeometry( mymesh.geometry ); 
-    				var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
-				    var wireframe = new THREE.LineSegments( geo, mat );
-				    mymesh.add( wireframe );
+					//var geo = new THREE.EdgesGeometry( mymesh.geometry ); 
+    				//var mat = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: .1 } );
+				    //var wireframe = new THREE.LineSegments( geo, mat );
+				    //mymesh.add( wireframe );
 
+
+				    
+					
 				    // Reposition camera
 				    camera.position.set(0, 0, 2);
 				    camera.lookAt(0, 0, 0);
@@ -172,11 +213,19 @@
 			    0.1,                                  // Near clipping pane
 			    10000                                  // Far clipping pane
 			);
+
+			
+			//scene.add(camera);
+			var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+			directionalLight.position.set(50,50,50);
+			var ambientlight = new THREE.AmbientLight( 0x404040 ); // soft white light
+			scene.add( directionalLight, ambientlight );
 			var renderer = new THREE.WebGLRenderer({ antialias: true });
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			renderer.setClearColor( 0xfff6e6 );
 			document.body.appendChild( renderer.domElement );
 			renderer.render(scene, camera);
+			
 		</script>
 	</body>
 </html>
