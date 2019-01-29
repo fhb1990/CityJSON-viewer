@@ -1,10 +1,29 @@
+.pageHead {
+  position: relative;
+}
+
+.dropboxBox {
+	position: absolute;
+	left: 20px;
+}
+
+.switchBox {
+  position: absolute;
+  right: 50px;
+  top: 35px;
+}
+
 #dropbox {
-  border: 2px dashed #ccc;
+  border: 2px dashed #9BD;
   border-radius: 20px;
-  width: 480px;
-  margin: 50px auto;
+  width: 300px;
+  margin: 20px auto;
   padding: 20px;
 }
 #dropbox.highlight {
   border-color: purple;
+}
+
+.dbText {
+  font-family: "Lucida Console", Monaco, monospace;
 }
